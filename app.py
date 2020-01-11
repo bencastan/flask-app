@@ -1,6 +1,44 @@
-from flask import Flask, make_response, render_template
+from flask import Flask, request, g, redirect, url_for, \
+                  render_template, flash, make_response
+from werkzeug.security import check_password_hash, generate_password_hash
+import sqlite3
 
+
+# Configuration
 app = Flask(__name__)
+app.config["SECRTE_KEY"] = "rajsiosorqwnejrq39834tergm4"
+app.config['DATABASE'] = 'flaskr.db'
+app.config['DEBUG'] = True
+
+
+# Connect to databasae
+def connect_db():
+    rv = sqlite3.connect(app.config['DATABASE'])
+    rv.row_factory = sqlite3.Row
+    return rv
+
+
+# create the database
+def init_db():
+    with app.app_context():
+        db = get_db()
+        with app.open_resource('schema.sql', mode='r') as f:
+            db.cursor().executescript(f.read())
+        db.commit()
+
+
+# Open Database connection
+def get_db():
+    if not hasattr(g, 'sqlite_db'):
+        g.sqlite_db = connect_db()
+    return g.sqlite_db
+
+
+# Close database connection
+@app.teardown_appcontext
+def close_db(err):
+    if hasattr(g, 'sqlite_db'):
+        g.sqlite_db.close()
 
 
 @app.route('/')
